@@ -199,6 +199,56 @@ router.get("/validate-asset", (req, res, next) => {
 });
 
 /**
+ * GET /utils/validate-account?id=GAAZI4...
+ * Validate whether a string is a valid Stellar Ed25519 public key (account ID).
+ * No Horizon call is made — validation is purely local via StrKey.
+ *
+ * @param {string} id - The string to validate.
+ *
+ * @returns {{ input, isValid, reason }} isValid is true when the key is valid;
+ *   reason is null for valid keys and a human-readable explanation for invalid ones.
+ *
+ * @example
+ * GET /utils/validate-account?id=GAAZI4TCR3TY5OJHCTJC2A4QSY6CJWJH5IAJTGKIN2ER7LBNVKOCCWN
+ */
+router.get("/validate-account", (req, res, next) => {
+  try {
+    const { id } = req.query;
+
+    if (!id || id.trim() === "") {
+      const err = new Error("Query parameter 'id' is required.");
+      err.statusCode = 400;
+      err.isValidation = true;
+      throw err;
+    }
+
+    const { StrKey } = require("@stellar/stellar-sdk");
+
+    let isValid = true;
+    let reason = null;
+
+    if (!id.startsWith("G")) {
+      isValid = false;
+      reason = "Invalid prefix: Stellar public keys must start with 'G'.";
+    } else if (id.length !== 56) {
+      isValid = false;
+      reason = `Invalid length: expected 56 characters, got ${id.length}.`;
+    } else if (!/^[A-Z2-7]+$/.test(id)) {
+      isValid = false;
+      reason = "Invalid characters: Stellar public keys use base32 encoding (A–Z and 2–7 only).";
+    } else if (!StrKey.isValidEd25519PublicKey(id)) {
+      // Catches checksum failures and any other structural issues
+      isValid = false;
+      reason = "Invalid key: checksum verification failed.";
+    }
+
+    return success(res, { input: id, isValid, reason });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
  * POST /utils/decode-xdr
  * Decode a base64-encoded Stellar transaction XDR envelope into JSON.
  *

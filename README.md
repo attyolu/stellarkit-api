@@ -41,26 +41,26 @@ This project is ideal for:
 
 ## API Quick Reference
 
-| Method | Endpoint | Description |
-| --- | --- | --- |
-| GET | `/` | Lists available API endpoints and descriptions |
-| GET | `/health` | Returns basic service health status |
-| GET | `/network-status` | Returns current Stellar network and ledger info |
-| GET | `/fee-estimate` | Calculates fee estimates for a transaction |
-| GET | `/account/:id` | Retrieves full account details and balances |
-| GET | `/account/:id/balances` | Retrieves XLM and asset balances only |
-| GET | `/account/:id/sequence` | Retrieves the account sequence number |
-| GET | `/account/:id/summary` | Retrieves a compact account summary |
-| GET | `/account/:id/payments` | Lists payment and create_account operations |
-| GET | `/transactions/:id` | Retrieves paginated transaction history |
-| GET | `/transactions/:id/operations` | Retrieves paginated operation history |
-| GET | `/asset/:code/:issuer` | Retrieves metadata and statistics for an asset |
-| GET | `/asset/:code/:issuer/holders` | Lists holders of an asset trustline |
-| GET | `/asset/search` | Searches assets by code across issuers |
-| GET | `/stream/transactions/:id` | Streams live account transactions via SSE |
-| GET | `/utils/friendbot/:accountId` | Funds a testnet account via Friendbot |
-| GET | `/utils/memo` | Decodes Horizon memo data |
-| GET | `/utils/base64` | Encodes or decodes Base64 strings |
+| Method | Endpoint                       | Description                                     |
+| ------ | ------------------------------ | ----------------------------------------------- |
+| GET    | `/`                            | Lists available API endpoints and descriptions  |
+| GET    | `/health`                      | Returns basic service health status             |
+| GET    | `/network-status`              | Returns current Stellar network and ledger info |
+| GET    | `/fee-estimate`                | Calculates fee estimates for a transaction      |
+| GET    | `/account/:id`                 | Retrieves full account details and balances     |
+| GET    | `/account/:id/balances`        | Retrieves XLM and asset balances only           |
+| GET    | `/account/:id/sequence`        | Retrieves the account sequence number           |
+| GET    | `/account/:id/summary`         | Retrieves a compact account summary             |
+| GET    | `/account/:id/payments`        | Lists payment and create_account operations     |
+| GET    | `/transactions/:id`            | Retrieves paginated transaction history         |
+| GET    | `/transactions/:id/operations` | Retrieves paginated operation history           |
+| GET    | `/asset/:code/:issuer`         | Retrieves metadata and statistics for an asset  |
+| GET    | `/asset/:code/:issuer/holders` | Lists holders of an asset trustline             |
+| GET    | `/asset/search`                | Searches assets by code across issuers          |
+| GET    | `/stream/transactions/:id`     | Streams live account transactions via SSE       |
+| GET    | `/utils/friendbot/:accountId`  | Funds a testnet account via Friendbot           |
+| GET    | `/utils/memo`                  | Decodes Horizon memo data                       |
+| GET    | `/utils/base64`                | Encodes or decodes Base64 strings               |
 
 ---
 
@@ -118,6 +118,21 @@ Visit `http://localhost:3000` after startup.
 
 ---
 
+## Environment Variables Reference
+
+| Variable | Default | Description | Required |
+|----------------------|------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|----------|
+| `STELLAR_NETWORK` | `testnet` | Target Stellar network. Accepted values: `testnet` or `mainnet`. Controls which Horizon server is used and gates testnet-only endpoints such as Friendbot. | ⬜ No |
+| `HORIZON_URL` | *(derived from `STELLAR_NETWORK`)* | Override the Horizon server URL. When omitted, defaults to `https://horizon-testnet.stellar.org` for `testnet` and `https://horizon.stellar.org` for `mainnet`. | ⬜ No |
+| `PORT` | `3000` | TCP port the Express server listens on. | ⬜ No |
+| `NODE_ENV` | `development` | Runtime environment. Set to `production` to enable combined HTTP logging and sanitised error messages. Set to `test` to suppress console output during test runs. | ⬜ No |
+| `RATE_LIMIT_MAX` | `100` | Maximum number of requests allowed per IP address per 15-minute window. Applies to the global rate limiter. | ⬜ No |
+| `CACHE_TTL_MS` | `5000` | Cache time-to-live in milliseconds for the `/network-status` and `/fee-estimate` endpoints. | ⬜ No |
+
+> All variables are optional — the server starts with sensible defaults when none are set. Set `STELLAR_NETWORK=mainnet` explicitly before deploying to production to avoid accidentally pointing at testnet.
+
+---
+
 ## Understanding Stellar Account Reserves
 
 Stellar requires all accounts to maintain a **minimum XLM balance** to exist on the ledger. This mechanism deters ledger spam and ensures the network remains efficient.
@@ -127,54 +142,70 @@ Stellar requires all accounts to maintain a **minimum XLM balance** to exist on 
 - **Subentry Reserve:** Every item an account owns (such as a trustline for a new asset, an open offer, a data entry, or an additional signer) is called a subentry. Each subentry increases the account's minimum balance requirement by **1 base reserve** (0.5 XLM).
 
 ### Example Calculation
+
 If an account is funded and holds **3 trustlines**, its minimum balance is calculated as follows:
+
 - **Account Base:** 2 base reserves = 1 XLM
 - **3 Trustlines:** 3 subentries × 0.5 XLM = 1.5 XLM
 - **Total Minimum Balance:** 2.5 XLM
 
 ### Spendable Balance
+
 An account's **spendable balance** is the amount of XLM it can freely transfer or spend. It is calculated as:
 `Spendable Balance = Total Balance - Minimum Balance - Liabilities`
 
 You don't need to calculate this manually! The `GET /account/:id` endpoint provided by this API automatically computes and returns both the `minimumBalance` and `spendableBalance` for any Stellar account.
 
 ---
+
 ## API Overview
 
 ### `GET /`
+
 Returns a list of available API endpoints and a brief description.
 
 ### `GET /health`
+
 Returns basic service health status.
 
 ### `GET /network-status`
+
 Returns current Stellar network information, latest ledger data, fee settings, and protocol version.
 
 ### `GET /fee-estimate`
+
 Calculates a fee estimate for a transaction using the current network base fee and requested operation count.
 
 ### `GET /account/:id`
+
 Fetches account details, balances, signers, thresholds, flags, and spendable balance for the given Stellar public key.
 
 ### `GET /account/:id/balances`
+
 Returns account balance details for XLM and all non-native assets.
 
 ### `GET /account/:id/summary`
+
 Returns a compact account summary suitable for dashboards and quick views.
 
 ### `GET /account/:id/payments`
+
 Lists payments and asset transfers for the account.
 
 ### `GET /transactions/:id`
+
 Retrieves transaction history for an account, with pagination.
 
 ### `GET /transactions/:id/operations`
+
 Retrieves operation history for an account, with pagination.
 
 ### `GET /asset/:code/:issuer`
+
 Returns metadata and statistics for a specific Stellar asset.
 
 ### `GET /asset/search?code=:code`
+
 Searches for assets by code and returns matching results, including issuer details.
 
 ---
@@ -183,16 +214,16 @@ Searches for assets by code and returns matching results, including issuer detai
 
 These are common Horizon transaction and operation result codes developers may see when submitting transactions to the Stellar network.
 
-| Error code | Meaning | How to fix it |
-|------------|---------|---------------|
-| `tx_bad_seq` | The transaction sequence number does not match the account's current sequence number. | Reload the source account from Horizon before building the transaction, then rebuild and sign it with the latest sequence number. |
-| `tx_insufficient_fee` | The transaction fee is too low for the number of operations or current network conditions. | Increase the transaction fee, use the current base fee from Horizon, and multiply it by the number of operations in the transaction. |
-| `op_no_trust` | The destination account does not have a trustline for the asset being sent. | Have the destination account create a trustline for the asset before sending the payment. |
-| `op_line_full` | The destination trustline exists but does not have enough remaining limit to receive the asset. | Ask the destination account to raise its trustline limit or reduce the payment amount. |
-| `op_no_destination` | The destination account does not exist on the network. | Create the account first with a `createAccount` operation, or confirm the destination public key is correct. |
-| `tx_bad_auth` | The transaction is missing a required signature or has an invalid signature. | Sign with every required signer for the source account and operations, and confirm the correct network passphrase is used. |
-| `op_underfunded` | The source account does not have enough funds to complete the operation. | Add funds to the source account, reduce the operation amount, or account for fees and minimum reserve requirements. |
-| `op_low_reserve` | The operation would leave the account below its required minimum XLM reserve. | Keep more XLM in the account, remove unused subentries, or reduce the operation so the account stays above minimum reserve. |
+| Error code            | Meaning                                                                                         | How to fix it                                                                                                                        |
+| --------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `tx_bad_seq`          | The transaction sequence number does not match the account's current sequence number.           | Reload the source account from Horizon before building the transaction, then rebuild and sign it with the latest sequence number.    |
+| `tx_insufficient_fee` | The transaction fee is too low for the number of operations or current network conditions.      | Increase the transaction fee, use the current base fee from Horizon, and multiply it by the number of operations in the transaction. |
+| `op_no_trust`         | The destination account does not have a trustline for the asset being sent.                     | Have the destination account create a trustline for the asset before sending the payment.                                            |
+| `op_line_full`        | The destination trustline exists but does not have enough remaining limit to receive the asset. | Ask the destination account to raise its trustline limit or reduce the payment amount.                                               |
+| `op_no_destination`   | The destination account does not exist on the network.                                          | Create the account first with a `createAccount` operation, or confirm the destination public key is correct.                         |
+| `tx_bad_auth`         | The transaction is missing a required signature or has an invalid signature.                    | Sign with every required signer for the source account and operations, and confirm the correct network passphrase is used.           |
+| `op_underfunded`      | The source account does not have enough funds to complete the operation.                        | Add funds to the source account, reduce the operation amount, or account for fees and minimum reserve requirements.                  |
+| `op_low_reserve`      | The operation would leave the account below its required minimum XLM reserve.                   | Keep more XLM in the account, remove unused subentries, or reduce the operation so the account stays above minimum reserve.          |
 
 ---
 
@@ -278,18 +309,18 @@ This repository publishes type declarations in `types/index.d.ts`. Use these typ
 ### Example
 
 ```typescript
-import type { AccountResponse, ApiError } from 'stellarkit-api'
+import type { AccountResponse, ApiError } from "stellarkit-api";
 
 async function loadAccount(accountId: string) {
-  const response = await fetch(`http://localhost:3000/account/${accountId}`)
-  const payload = await response.json()
+  const response = await fetch(`http://localhost:3000/account/${accountId}`);
+  const payload = await response.json();
 
   if (!response.ok) {
-    const error = payload as ApiError
-    throw new Error(error.error.message)
+    const error = payload as ApiError;
+    throw new Error(error.error.message);
   }
 
-  return payload as AccountResponse
+  return payload as AccountResponse;
 }
 ```
 
@@ -331,14 +362,17 @@ This project is licensed under the MIT License.
 ---
 
 ### `GET /account/:id`
+
 Returns full account details for a Stellar public key.
 
 **Example:**
+
 ```
 GET /account/GAAZI4TCR3TY5OJHCTJC2A4QSY6CJWJH5IAJTGKIN2ER7LBNVKOCCWN
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -476,6 +510,7 @@ GET /account/GAAZI4.../transactions/search?memo=12345&memo_type=id
 ---
 
 ### `GET /transactions/:id`
+
 Returns paginated transaction history for an account.
 
 **Query params:**
@@ -488,14 +523,17 @@ Returns paginated transaction history for an account.
 ---
 
 ### `GET /transactions/:id/operations`
+
 Returns paginated operation history for an account. Same query params as above.
 
 ---
 
 ### `GET /asset/:code/:issuer`
+
 Returns metadata and statistics for a specific Stellar asset.
 
 **Example:**
+
 ```
 GET /asset/USDC/GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN
 ```
@@ -559,6 +597,7 @@ GET /dex/spread/USDC:GA5Z.../EURC:GB...
 ---
 
 ### `GET /asset/:code/:issuer/holders`
+
 Returns paginated accounts holding a trustline for a specific Stellar asset.
 
 **Query params:**
@@ -569,6 +608,7 @@ Returns paginated accounts holding a trustline for a specific Stellar asset.
 | `cursor` | string | — | Pagination cursor from previous response |
 
 **Example:**
+
 ```
 GET /asset/USDC/GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN/holders
 ```
@@ -576,9 +616,11 @@ GET /asset/USDC/GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN/holders
 ---
 
 ### `GET /asset/search?code=:code`
+
 Searches for all assets with a given code across all issuers.
 
 **Example:**
+
 ```
 GET /asset/search?code=USDC
 ```
@@ -588,19 +630,21 @@ GET /asset/search?code=USDC
 ## 📡 Streaming & WebSockets
 
 ### `WS /stream/ledgers`
+
 Establishes a live, real-time WebSocket connection to stream Stellar ledger updates. As new ledgers are closed on the Stellar blockchain, the API receives them via the Stellar Horizon SDK subscription, parses them, and immediately broadcasts them to connected WebSocket clients.
 
 #### Client Connection Example (Vanilla JS)
+
 ```javascript
-const ws = new WebSocket('ws://localhost:3000/stream/ledgers');
+const ws = new WebSocket("ws://localhost:3000/stream/ledgers");
 
 ws.onopen = () => {
-  console.log('Connected to StellarKit ledger stream!');
+  console.log("Connected to StellarKit ledger stream!");
 };
 
 ws.onmessage = (event) => {
   const ledger = JSON.parse(event.data);
-  console.log('New ledger closed:', ledger);
+  console.log("New ledger closed:", ledger);
   // Example output:
   // {
   //   "sequence": 51234567,
@@ -611,11 +655,11 @@ ws.onmessage = (event) => {
 };
 
 ws.onerror = (error) => {
-  console.error('WebSocket error:', error);
+  console.error("WebSocket error:", error);
 };
 
 ws.onclose = () => {
-  console.log('WebSocket connection closed.');
+  console.log("WebSocket connection closed.");
 };
 ```
 
@@ -630,6 +674,7 @@ npm run seed
 ```
 
 This script:
+
 - generates a new keypair
 - funds the public key on Stellar testnet using Friendbot
 - prints the public/private keys to the console
@@ -639,8 +684,6 @@ This script:
 ---
 
 ## 🧪 Running Tests
-
-
 
 ```bash
 npm test
@@ -711,3 +754,56 @@ stellarkit-api/
 ## 📄 License
 
 [MIT](LICENSE)
+
+---
+
+## Rate Limiting
+
+The StellarKit API enforces request limits to protect the service and provide fair access for all clients. By default the API applies the following limit per originating IP address:
+
+- **Default:** 100 requests per 15 minutes (per IP)
+
+When requests are served, the API includes the following response headers so clients can observe and adapt to limits:
+
+- `RateLimit-Limit`: The maximum number of requests allowed in the current window.
+- `RateLimit-Remaining`: How many requests remain in the current window.
+- `RateLimit-Reset`: UNIX epoch timestamp (seconds) when the current window resets.
+
+If a client exceeds the configured limit the API will return HTTP `429 Too Many Requests`. Example HTTP headers for a 429 response:
+
+```
+HTTP/1.1 429 Too Many Requests
+RateLimit-Limit: 100
+RateLimit-Remaining: 0
+RateLimit-Reset: 1710000000
+Content-Type: application/json
+```
+
+Example JSON body returned on rate limit exceed:
+
+```json
+{
+  "success": false,
+  "error": {
+    "status": 429,
+    "message": "Too many requests, rate limit exceeded"
+  }
+}
+```
+
+Configuration
+
+Rate limiting behavior can be adjusted via environment variables — no code changes are required. The API supports the following variables (defaults shown):
+
+- `RATE_LIMIT_MAX_REQUESTS` — Maximum requests per window (default: `100`)
+- `RATE_LIMIT_WINDOW_MINUTES` — Window size in minutes (default: `15`)
+
+After changing environment variables, restart the service for the new values to take effect.
+
+Client recommendations
+
+- Watch `RateLimit-Remaining` and proactively delay requests when it is low.
+- On `429` responses, use the `RateLimit-Reset` timestamp to wait until the window resets.
+- Implement retries with exponential backoff and jitter instead of tight loops.
+
+Note: This README section documents runtime behavior only — there are intentionally no code changes in this PR.
