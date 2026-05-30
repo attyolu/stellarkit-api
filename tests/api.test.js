@@ -1161,3 +1161,23 @@ issuer = "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
     });
   });
 });
+
+describe("GET /account/:id/trustlines", () => {
+  it("returns 400 for an invalid account ID", async () => {
+    const res = await request(app).get("/account/INVALID_KEY/trustlines");
+    expect(res.statusCode).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.error.type).toBe("ValidationError");
+  });
+
+  it("validates that route exists and handles errors gracefully", async () => {
+    // This endpoint should be properly defined even if the account doesn't exist
+    // A real account could be tested with a valid Stellar account ID
+    const res = await request(app).get("/account/NOT_A_VALID_KEY/trustlines");
+    
+    // Should get a validation error, not a 404
+    expect(res.statusCode).toBe(400);
+    expect(res.body.success).toBe(false);
+  });
+});
+});
