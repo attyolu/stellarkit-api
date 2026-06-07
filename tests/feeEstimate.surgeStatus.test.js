@@ -13,13 +13,13 @@ jest.mock("../src/config/stellar", () => {
 });
 
 const { server } = require("../src/config/stellar");
-const { feeEstimateCache } = require("../src/utils/cache");
+const cacheService = require("../src/services/cache");
 
 describe("Fee Surge Status API", () => {
     beforeEach(() => {
         jest.clearAllMocks();
         // Clear the cache
-        feeEstimateCache.clear();
+        cacheService.flush();
     });
 
     it("returns isSurging: false when average capacity usage is low", async () => {

@@ -1,41 +1,56 @@
-"use strict";
-
 const NodeCache = require("node-cache");
 
-const _store = new NodeCache({ useClones: false });
-
 /**
- * Get a cached value by key.
- * @param {string} key
- * @returns {any|undefined}
+ * Centralised in-memory TTL cache service.
+ * Used to cache Horizon responses and other frequently requested data.
  */
-function get(key) {
-  return _store.get(key);
+class CacheService {
+  constructor(defaultTtlSeconds = 60) {
+    this.cache = new NodeCache({
+      stdTTL: defaultTtlSeconds,
+      checkperiod: defaultTtlSeconds * 0.2,
+      useClones: false, // For performance since we're just caching JSON response data
+    });
+  }
+
+  /**
+   * Get a value from the cache.
+   * 
+   * @param {string} key - Cache key
+   * @returns {any|undefined} Cached value or undefined if missing/expired
+   */
+  get(key) {
+    return this.cache.get(key);
+  }
+
+  /**
+   * Set a value in the cache with a specific TTL.
+   * 
+   * @param {string} key - Cache key
+   * @param {any} value - Value to cache
+   * @param {number} ttlSeconds - TTL in seconds
+   * @returns {boolean} True if successfully set
+   */
+  set(key, value, ttlSeconds) {
+    return this.cache.set(key, value, ttlSeconds);
+  }
+
+  /**
+   * Delete a specific key from the cache.
+   * 
+   * @param {string} key - Cache key
+   */
+  delete(key) {
+    this.cache.del(key);
+  }
+
+  /**
+   * Flush all data from the cache.
+   */
+  flush() {
+    this.cache.flushAll();
+  }
 }
 
-/**
- * Store a value with an optional TTL.
- * @param {string} key
- * @param {any} value
- * @param {number} [ttlSeconds=5]
- */
-function set(key, value, ttlSeconds = 5) {
-  _store.set(key, value, ttlSeconds);
-}
-
-/**
- * Delete a cached entry.
- * @param {string} key
- */
-function del(key) {
-  _store.del(key);
-}
-
-/**
- * Flush (clear) all cached entries.
- */
-function flush() {
-  _store.flushAll();
-}
-
-module.exports = { get, set, del, flush };
+// Export a singleton instance
+module.exports = new CacheService();

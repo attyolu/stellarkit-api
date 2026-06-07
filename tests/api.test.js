@@ -1,13 +1,12 @@
 const request = require("supertest");
 const app = require("../src/index");
-const { networkStatusCache, feeEstimateCache } = require("../src/utils/cache");
+const cacheService = require("../src/services/cache");
 const { server } = require("../src/config/stellar");
 
 describe("StellarKit API", () => {
   // Clear caches before each test
   beforeEach(() => {
-    networkStatusCache.clear();
-    feeEstimateCache.clear();
+    cacheService.flush();
   });
 
   // ── Health ─────────────────────────────────────────────────────────────────
@@ -1199,5 +1198,4 @@ describe("GET /account/:id/trustlines", () => {
     expect(res.statusCode).toBe(400);
     expect(res.body.success).toBe(false);
   });
-});
 });
